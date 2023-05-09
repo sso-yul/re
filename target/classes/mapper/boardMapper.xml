@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace는 설정하기나름, 패키지 명으로 하는 것이 관례적 -->
+  <mapper namespace="com.earth.korea.dao.BoardMapper">
+  	<sql id="selectFromBoard">
+  		SELECT bno, title, content, writer, view_cnt, comment_cnt, reg_date, up_date
+		FROM t_board
+  	</sql>
+  
+  <!-- 다른 곳에서도 쓸 수 있으니 select로 id 설정, Type을 꼭 맞춰줘야함, 대소문자 상관없음 -->
+	  	<select id="select" parameterType="int" resultType="BoardDTO"> 
+			<include refid="selectFromBoard" />
+			where bno = #{bno}
+	  	</select>
+	  	
+	  	<select id="selectAll" resultType="BoardDTO">
+	  		<include refid="selectFromBoard" />
+			order by reg_date desc, bno desc
+	  	</select>
+	  	
+	  	<select id="selectPage" parameterType="map" resultType="BoardDTO">
+	  		<include refid="selectFromBoard" />
+	  		order by reg_date desc, bno desc
+	  		limit #{pageSize} offset #{offset}
+	  	</select>
+	  	
+	  	<select id="searchResultCnt" parameterType="SearchItem" resultType="int">
+	  		select count(*)
+	  		from t_board a, t_user b
+	  		where true and a.writer = b.id
+	  		<include refid="searchCondition" />
+	  	</select>
+	  	
+	  	<select id="searchSelectPage" parameterType="SearchItem" resultType="BoardDTO">
+	  		SELECT bno, title, content, writer, view_cnt, comment_cnt, a.reg_date, up_date, b.name
+	  		FROM t_board a, t_user b
+	  		where true and a.writer = b.id
+	  		<include refid="searchCondition" />
+	  		order by reg_date desc, bno desc
+	  		limit #{pageSize} offset #{offset}	  		  	
+	  	</select>
+	  	
+	  	
+	  	<sql id="searchCondition">
+	  		<choose>
+	  			<when test='option == "T"'>
+	  				and title like concat('%', #{keyword}, '%')
+	  			</when>
+	  			<when test='option == "W"'>
+	  				and b.name like concat('%', #{keyword}, '%')
+	  			</when>
+	  			<otherwise>
+	  				and (title like concat('%', #{keyword}, '%')
+	  				OR content like concat('%', #{keyword}, '%'))
+	  			</otherwise>
+	  		</choose>
+	  	
+	  	</sql>
+	  	
+	  	<delete id="deleteAll">
+	  		truncate table t_board restart identity;
+	  	</delete>
+	  	
+	  	<delete id="delete" parameterType="map">
+	  		delete from t_board
+	  		where bno = #{bno} and writer = #{writer}
+	  	</delete>
+	  	
+	  	<delete id="deleteForAdmin">
+	  		delete from t_board where bno = #{bno}
+	  	</delete>
+	  	
+	  	<insert id="insert" parameterType="BoardDTO">
+	  		insert into t_board (title, content, writer)
+			values (#{title}, #{content}, #{writer})
+	  	</insert>
+	  	
+	  	<select id="count" resultType="integer">
+	  		select count(*) from t_board
+	  	</select>
+
+	  	<update id="update" parameterType="BoardDTO" >
+	  		update t_board set title=#{title}, content=#{content}, up_date=now()
+			where bno=#{bno} and writer=#{writer}
+	  	</update>
+	  	
+	  	<update id="increaseViewCnt" parameterType="int">
+	  		update t_board
+			set view_cnt = view_cnt + 1
+			where bno = #{bno}
+	  	</update>
+	  	
+	  	
+  </mapper>
